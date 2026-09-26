@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/Platform-TerraMaster_TOS7-orange.svg)](https://tmnascommunity.eu)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-green.svg)](LICENSE.md)
 
-This project contains the Go source code for the backend proxy daemon (`main.go`) used by application packages built by **OutkastM** for TerraMaster OS (TOS7).
+This project contains the Go source code for the backend proxy daemon (`main.go`) used by application packages (`<appID>`) built by **OutkastM** for TerraMaster OS (TOS7).
 
 ---
 
