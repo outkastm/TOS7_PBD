@@ -11,7 +11,7 @@ This project contains the Go source code for the backend proxy daemon (`main.go`
 
 ## 📌 Features & Purpose
 
-The compiled binary acts as a secure local backend proxy and interface bridge between the TOS7 Web UI frontend and the underlying application daemon.
+The compiled binary acts as a secure local backend proxy and interface bridge between the TOS7 (`<appID>`) Web UI frontend and the underlying application daemon.
 
 * **Authentication & CSRF Validation:** Validates active TOS7 user sessions via Redis (`PHPREDIS_SESSION`) and checks matching `X-Csrf-Token` headers.
 * **Systemd Socket Activation:** Supports both standalone execution and systemd socket activation listening on local Unix sockets (`/var/api/<appID>.sock`).
