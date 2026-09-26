@@ -46,7 +46,7 @@ When launched by systemd socket activation or as a standalone process, the daemo
 ## 🔒 Security & Scope
 
 * **Path Restrictions:** Log access and configuration file writing are strictly sanitized and restricted to `/usr/local/`, `/usr/www/`, `/var/log/`, and allowed configuration extensions (`.json`, `.ini`, `.conf`, `.cfg`, `.yaml`, `.yml`, `.env`).
-* **Local Socket Security:** All direct socket calls from local Unix sockets bypassing remote HTTP headers are granted local administrative privileges.
+* **Local Socket Security:** All direct socket calls from local Unix sockets bypassing remote HTTP headers are granted local administrative privileges. For the apps built by **OutkastM**, the daemon is launched as `<appID>` running user with limited access granted for this user
 
 ---
 
