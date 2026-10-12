@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const AppVersion = "1.0.0"
+const AppVersion = "1.0.1"
 
 type SavePayload struct {
 	Target  string `json:"target"`
@@ -128,11 +128,6 @@ func parseEnvConfig(envFilePath string) (map[string]int, string, map[string]stri
 }
 
 func validateAuth(r *http.Request) bool {
-	// Allow direct local Unix socket calls
-	if r.RemoteAddr == "@" || strings.HasPrefix(r.RemoteAddr, "@") || r.RemoteAddr == "" {
-		return true
-	}
-
 	cookieStr := r.Header.Get("Cookie")
 	csrfToken := r.Header.Get("X-Csrf-Token")
 
@@ -140,6 +135,7 @@ func validateAuth(r *http.Request) bool {
 		csrfToken = r.Header.Get("x-csrf-token")
 	}
 
+	// Reject if missing required session parameters
 	if cookieStr == "" || csrfToken == "" {
 		return false
 	}
@@ -179,9 +175,15 @@ func validateAuth(r *http.Request) bool {
 }
 
 func isSessionActiveInRedis(sessionID string) bool {
+	// Try TCP connection first
 	conn, err := net.DialTimeout("tcp", "127.0.0.1:6379", 300*time.Millisecond)
 	if err != nil {
-		return false
+		// Fallback to Unix domain socket for ARM64/aarch64 environments
+		conn, err = net.DialTimeout("unix", "/var/run/redis/redis.sock", 300*time.Millisecond)
+		if err != nil {
+			log.Printf("[AUTH ERROR] Could not connect to Redis via TCP or Unix socket: %v", err)
+			return false
+		}
 	}
 	defer conn.Close()
 
