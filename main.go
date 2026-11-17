@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const AppVersion = "1.0.1"
+const AppVersion = "1.0.3"
 
 type SavePayload struct {
 	Target  string `json:"target"`
@@ -42,6 +42,20 @@ var (
 	socketPath  string
 	envPath     string
 )
+
+func resolveEnvPath(appLocalDir, configDir, appID string) string {
+	envFileName := fmt.Sprintf("%s.env", appID)
+	configEnvPath := filepath.Join(configDir, envFileName)
+	rootEnvPath := filepath.Join(appLocalDir, envFileName)
+
+	if _, err := os.Stat(configEnvPath); err == nil {
+		return configEnvPath
+	}
+	if _, err := os.Stat(rootEnvPath); err == nil {
+		return rootEnvPath
+	}
+	return configEnvPath
+}
 
 func parsePhpConfig(appID string) map[string]string {
 	phpVars := make(map[string]string)
@@ -229,7 +243,7 @@ func main() {
 	wwwAppDir = filepath.Join("/usr/www", appID)
 	configDir = filepath.Join(appLocalDir, "config")
 	socketPath = fmt.Sprintf("/var/api/%s.sock", appID)
-	envPath = filepath.Join(appLocalDir, fmt.Sprintf("%s.env", appID))
+	envPath = resolveEnvPath(appLocalDir, configDir, appID)
 
 	listenFdsStr := os.Getenv("LISTEN_FDS")
 	if listenFdsStr != "" {
@@ -249,7 +263,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to bind systemd socket listener: %v", err)
 		}
-		log.Printf("[%s v20] Running via systemd socket activation on %s", appID, socketPath)
+		log.Printf("[%s v20] Running via systemd socket activation on %s (env: %s)", appID, socketPath, envPath)
 	} else {
 		_ = os.Remove(socketPath)
 
@@ -266,7 +280,7 @@ func main() {
 			log.Printf("Warning: Failed to set socket permissions: %v", err)
 		}
 
-		log.Printf("[%s v20] Running as standalone binary daemon listening on %s", appID, socketPath)
+		log.Printf("[%s v20] Running as standalone binary daemon listening on %s (env: %s)", appID, socketPath, envPath)
 	}
 	defer listener.Close()
 
@@ -370,7 +384,8 @@ func handleDiagnostics(w http.ResponseWriter) {
 	commands := []string{"status", "inst_version", "dep_check"}
 
 	phpVars := parsePhpConfig(appID)
-	ports, webBase, envVars := parseEnvConfig(envPath)
+	currentEnvPath := resolveEnvPath(appLocalDir, configDir, appID)
+	ports, webBase, envVars := parseEnvConfig(currentEnvPath)
 
 	var sb strings.Builder
 
@@ -482,7 +497,11 @@ func handleSave(w http.ResponseWriter, body io.Reader) {
 
 	var targetPath string
 	if ext == ".env" {
-		targetPath = envPath
+		if strings.Contains(filepath.ToSlash(payload.Target), "/config/") {
+			targetPath = filepath.Join(configDir, fileName)
+		} else {
+			targetPath = resolveEnvPath(appLocalDir, configDir, appID)
+		}
 	} else {
 		targetPath = filepath.Join(configDir, fileName)
 	}
